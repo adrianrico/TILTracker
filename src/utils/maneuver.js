@@ -27,3 +27,29 @@ export function parseProgress(progress) {
 export function isPending(value) {
   return !value || value === 'PENDIENTE'
 }
+
+export function getContainerIds(maneuver) {
+  return (maneuver.man_containers ?? [])
+    .map((c) => c.container_id)
+    .filter(Boolean)
+}
+
+export function matchesDispatchDate(maneuver, dateValue) {
+  if (!dateValue) return true
+  return maneuver.man_dispatch_date === dateValue
+}
+
+// OR match: a maneuver matches if ANY of the searched container IDs belongs
+// to it — lets a user paste IDs from several different maniobras at once and
+// see the union of matches...
+export function matchesContainerIds(maneuver, containerIds) {
+  if (!containerIds?.length) return true
+  const ownIds = getContainerIds(maneuver).map((id) => id.toLowerCase())
+  return containerIds.some((id) => ownIds.includes(id.toLowerCase()))
+}
+
+export function filterManeuvers(maneuvers, { dispatchDate, containerIds }) {
+  return maneuvers.filter(
+    (m) => matchesDispatchDate(m, dispatchDate) && matchesContainerIds(m, containerIds)
+  )
+}

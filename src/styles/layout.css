@@ -162,22 +162,95 @@
   color: var(--text-1);
 }
 
-.tracker-view__grid {
-  display: grid;
-  grid-template-columns: 1fr;
+.tracker-view__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* Filters ------------------------------------------------------------- */
+
+.maneuver-filters {
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.maneuver-filters__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
   gap: var(--space-2);
 }
 
-@media (min-width: 768px) {
-  .tracker-view__grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.maneuver-filters__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 160px;
 }
 
-@media (min-width: 1200px) {
-  .tracker-view__grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
+.maneuver-filters__field--grow {
+  flex: 1;
+  min-width: 220px;
+}
+
+.maneuver-filters__label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-2);
+}
+
+.maneuver-filters__date,
+.maneuver-filters__container-input {
+  width: 100%;
+}
+
+.maneuver-filters__clear {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.maneuver-filters__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.maneuver-filters__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 10px;
+  border-radius: 999px;
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  font-size: var(--font-size-sm);
+  color: var(--text-0);
+}
+
+.maneuver-filters__chip-remove {
+  background: none;
+  border: none;
+  color: var(--text-1);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 2px 4px;
+  min-width: auto;
+  min-height: auto;
+  border-radius: 50%;
+}
+
+.maneuver-filters__chip-remove:hover {
+  color: var(--status-red);
+}
+
+.maneuver-filters__count {
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--font-size-sm);
 }
 
 /* Maneuver card ----------------------------------------------------------- */
@@ -212,6 +285,7 @@
   font-size: var(--font-size-sm);
   color: var(--accent);
   letter-spacing: 0.03em;
+  flex-shrink: 0;
 }
 
 .maneuver-card__field {
@@ -231,6 +305,23 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* List mode: from tablet width up, lay the summary fields out inline like a
+   row instead of stacked, so a whole maniobra reads on one compact line... */
+@media (min-width: 768px) {
+  .maneuver-card__summary-main {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: var(--space-3);
+    row-gap: 4px;
+  }
+
+  .maneuver-card__field {
+    flex: 1 1 160px;
+    min-width: 0;
+  }
 }
 
 .maneuver-card__summary-side {
