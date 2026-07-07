@@ -1,0 +1,394 @@
+================================================================================
+ PLAN MAESTRO DE CONSTRUCCIÓN (ORQUESTACIÓN Y DELEGACIÓN)
+ PROYECTO: TIL TRACKER — Portal de seguimiento de maniobras para clientes
+ Fecha: 2026-07-06 | Arquitecto/Orquestador: Claude | Archivo: plan_til_usr.txt
+ v3 — nombre oficial "TIL TRACKER"; incluye capa de SEGURIDAD ANTI-INYECCIÓN
+================================================================================
+
+--------------------------------------------------------------------------------
+1. OBJETIVO
+--------------------------------------------------------------------------------
+Construir "TIL TRACKER", una app web (nueva, independiente) donde un usuario:
+  1. Ingresa una LLAVE y ve ÚNICAMENTE las maniobras cuyo campo man_moni_key
+     (colección "maneuver" de maylob_backend) coincide con esa llave.
+  2. SEGURIDAD: el usuario NO puede usar el campo de llave (ni ningún otro
+     vector) para inyectar código, operadores NoSQL o payloads que extraigan
+     datos de la base de datos. Ver sección 6 (modelo de amenazas y defensas).
+  3. La llave se guarda en el navegador (localStorage) y NO se vuelve a pedir,
+     salvo que la llave ya no exista en la BD o haya sido cambiada por el
+     administrador (en ese caso se borra la guardada y se vuelve a solicitar).
+  4. VISTA RÁPIDA por maniobra: contenedores, transportista, avance, ubicación
+     y estatus + botón desplegable para ver TODOS los datos.
+  5. En el detalle: sección con CANVAS para el link de GPS (man_gps_link).
+     Sin link registrado -> el canvas muestra la leyenda "MAPA NO DISPONIBLE".
+  6. SOLO LECTURA: el usuario no puede editar ningún campo.
+  7. Diseño: GLASSMORPHISM + NEUMORPHISM, React, PARALLAX (solo escritorio),
+     animaciones THREE.JS y ANIME.JS al hacer scroll, 100% responsiva.
+  8. Ejecutable en LOCAL y EN LÍNEA (Render), igual que til_forwarder.
+
+--------------------------------------------------------------------------------
+2. CONTEXTO TÉCNICO (ya verificado en el código real)
+--------------------------------------------------------------------------------
+BACKEND  -> C:\Users\Adria\Desktop\maylob_backend
+  - Express 4 + Mongoose 8 + CORS habilitado. Entrada: index.js / app.js.
+  - APP_ENV=local|production decide puerto y Mongo (local 127.0.0.1:27017/maylobdb
+    o Atlas). Producción actual: https://maylob-backend.onrender.com
+  - MODELS/maneuver.js YA tiene los campos necesarios:
+      man_moni_key, man_moni_enable, man_gps_link, man_progress, man_containers,
+      man_transporter, man_current_location, man_current_status, man_events,
+      man_client, man_type, man_modality, man_dispatch_date, man_finish_date,
+      man_executive, man_agent, man_load_location, man_unload_location,
+      man_intermediate_stops, man_eco, man_operator, man_note, man_route...
+  - CONTROLLERS/auxiliary_functions.js YA trae sanitizadores probados que se
+    REUTILIZAN (no reinventar):
+      * sanitizeId(v)     -> allowlist estricta [a-zA-Z0-9_-], max 100 chars.
+                             ES EL SANITIZADOR OFICIAL DE LA LLAVE.
+      * sanitizeString(v) -> elimina $ ` < > { } ; ' " \ | y bytes nulos/CRLF
+                             (bloquea operadores NoSQL y payloads de template).
+      * sanitizeUrl(v)    -> limpia null bytes, CRLF, <>, comillas, escapes.
+  - HOY NO EXISTE endpoint que filtre por man_moni_key (GET /maneuvers/maneuver/
+    devuelve todo paginado). HAY QUE CREARLO (solo lectura).
+  - HALLAZGO: ningún endpoint escribe man_moni_key (en create queda 'NO KEY' y
+    el update no la toca). El admin la asigna en la BD, o se agrega soporte
+    opcional en handle_maneuver (Tarea B-3).
+
+FRONTEND DE REFERENCIA -> C:\Users\Adria\Desktop\til_forwarder
+  - React 19 + Vite 8 + axios + @tanstack/react-query. Deploy estático en Render.
+  - Sección de seguimiento: src/pages/RutasSeguimiento.jsx. DE AQUÍ SE REUTILIZA:
+      * parseEvents()  -> agrupa man_events en [fecha, ubicación, estatus, %]
+      * statusColor()  -> paleta por estatus (SIN INICIAR / EN PROCESO /
+                          EN TRÁNSITO / EN TERMINAL / FINALIZADO / CANCELADO)
+      * Estructura vista rápida + fila expandida (timeline de eventos +
+        tarjetas glass de contenedores: tamaño, tipo, contenido, peso)
+      * Patrón services/api.js con VITE_API_URL y .env.development/.production
+      * render.yaml de sitio estático (build -> dist, rewrite a index.html)
+
+--------------------------------------------------------------------------------
+3. ARQUITECTURA
+--------------------------------------------------------------------------------
+  [til_tracker (NUEVO, React/Vite)] --GET /maneuvers/monitor/?key=XXX-->
+  [maylob_backend (+1 endpoint)] --> [MongoDB: filtro man_moni_key + man_moni_enable]
+
+  - Llave en localStorage['til_moni_key'].
+  - Respuestas del endpoint: code '1' = ok con datos | '0' = llave sin
+    coincidencias (inválida/cambiada) | '-1' = llave malformada/rechazada.
+  - El frontend distingue LLAVE INVÁLIDA (borra la guardada y re-pregunta)
+    de ERROR DE RED (conserva la llave y ofrece reintentar).
+  - Refresco automático de datos cada 60 s (react-query refetchInterval).
+  - Defensa en profundidad: la llave se valida con allowlist EN EL FRONTEND
+    (UX) y SE RE-SANITIZA EN EL BACKEND (seguridad real; el front nunca es
+    frontera de confianza).
+
+--------------------------------------------------------------------------------
+4. ÁRBOL DEL PROYECTO NUEVO: Desktop\til_tracker
+--------------------------------------------------------------------------------
+til_tracker/
+├── index.html                      # Punto de entrada Vite (título "TIL TRACKER",
+│                                   # fuentes, meta viewport)
+├── package.json                    # react, react-dom, axios, @tanstack/react-query,
+│                                   # three, animejs | dev: vite, @vitejs/plugin-react
+├── vite.config.js
+├── render.yaml                     # Deploy estático en Render (igual a til_forwarder)
+├── .env.development                # VITE_API_URL=http://localhost:8080
+├── .env.production                 # VITE_API_URL=https://maylob-backend.onrender.com
+├── .env.example
+├── .gitignore
+├── public/
+│   └── favicon.svg
+└── src/
+    ├── main.jsx                    # Bootstrap React + QueryClientProvider
+    ├── App.jsx                     # Orquesta: KeyGate vs TrackerView según llave
+    ├── services/
+    │   ├── api.js                  # axios.create({ baseURL: VITE_API_URL })
+    │   └── monitorService.js       # getByKey(key) -> GET /maneuvers/monitor/
+    │                               # (key SIEMPRE via axios params -> URL-encoded)
+    ├── hooks/
+    │   ├── useMoniKey.js           # lee/guarda/borra localStorage['til_moni_key']
+    │   ├── useManeuvers.js         # useQuery(key) + refetchInterval + mapeo de codes
+    │   └── useIsDesktop.js         # matchMedia('(min-width:1024px)') para parallax
+    ├── components/
+    │   ├── KeyGate.jsx             # Pantalla de ingreso de llave (glass + neumo)
+    │   │                           # valida allowlist [A-Za-z0-9_-] antes de enviar
+    │   ├── TrackerView.jsx         # Header + grid de tarjetas + estados vacíos
+    │   ├── ManeuverCard.jsx        # VISTA RÁPIDA: contenedores, transportista,
+    │   │                           # avance, ubicación, estatus + botón desplegable
+    │   ├── ManeuverDetail.jsx      # TODOS los datos (solo lectura) + timeline
+    │   ├── ContainerList.jsx       # Tarjetas glass de contenedores (de RutasSeguimiento)
+    │   ├── EventsTimeline.jsx      # Historial man_events (usa parseEvents)
+    │   ├── ProgressRing.jsx        # Anillo neumórfico de avance con count-up (anime.js)
+    │   ├── StatusChip.jsx          # Chip de color por estatus (usa statusColor)
+    │   ├── GPSCanvas.jsx           # CANVAS: animación radar + botón "ABRIR GPS";
+    │   │                           # sin link -> dibuja "MAPA NO DISPONIBLE"
+    │   ├── ThreeBackground.jsx     # Fondo three.js (partículas) reactivo al scroll
+    │   └── ParallaxLayer.jsx       # Capas parallax activas solo en escritorio
+    ├── utils/
+    │   ├── maneuver.js             # parseEvents, statusColor
+    │   ├── security.js             # isValidKeyFormat (allowlist), isSafeGpsLink
+    │   │                           # (solo http/https, bloquea javascript:/data:)
+    │   └── animations.js           # Helpers anime.js + IntersectionObserver on-scroll
+    └── styles/
+        ├── tokens.css              # Colores, radios, sombras, tipografía fluida clamp()
+        ├── glass.css               # backdrop-filter blur, bordes rgba translúcidos
+        ├── neumo.css               # Sombras dobles (clara/oscura) inputs y botones
+        └── layout.css              # Grid responsivo 1/2/3 col, breakpoints, targets 44px
+
+ARCHIVOS QUE SE MODIFICAN EN maylob_backend (mínimos, sin romper lo existente):
+maylob_backend/
+├── CONTROLLERS/maneuver.js         # + get_maneuvers_by_key (solo lectura,
+│                                   #   llave sanitizada con sanitizeId)
+│                                   # (+ opcional: aceptar man_moni_key en update)
+├── ROUTES/maneuver.js              # + router.get('/monitor/', ...)
+└── app.js                          # (opcional B-5) rate-limit en /monitor/
+
+--------------------------------------------------------------------------------
+5. PLAN DE DELEGACIÓN — FASES, AGENTES Y TAREAS
+--------------------------------------------------------------------------------
+Orquestación: el ARQUITECTO (yo) define contratos (API, props, tokens CSS,
+reglas de seguridad), delega cada fase a un agente, revisa entregables contra
+los criterios de aceptación y solo entonces habilita la fase dependiente.
+Orden de ejecución: F1 -> F2 -> (F3 y F5 en paralelo) -> F4 -> F6 -> F7.
+
+────────────────────────────────────────────────────────────────────────────────
+FASE 1 · AGENTE BACKEND — Endpoint de monitoreo por llave (endurecido)
+Depende de: nada | Entrega: API funcionando en local
+────────────────────────────────────────────────────────────────────────────────
+  B-1  En CONTROLLERS/maneuver.js crear get_maneuvers_by_key:
+       - PRIMERA LÍNEA DE DEFENSA: rechazar si typeof req.query.key !== 'string'
+         (bloquea inyección de operadores NoSQL tipo ?key[$ne]=x, donde Express
+         convierte la query en objeto) -> code '-1'.
+       - Sanitizar con auxFuncModule.sanitizeId (allowlist [a-zA-Z0-9_-],
+         max 100): CUALQUIER carácter fuera de la allowlist se elimina; si el
+         resultado queda vacío o es 'NO KEY' -> code '-1'.
+       - La consulta usa SOLO igualdad literal con el valor ya sanitizado:
+         find({ man_moni_key: cleanKey, man_moni_enable: 'true' })
+         .sort({ _id: -1 }).lean()
+         NUNCA $where, NUNCA regex construida con input, NUNCA objetos del
+         request dentro del filtro.
+       - Proyección: excluir man_moni_key de la respuesta (la llave no viaja
+         de regreso) y no exponer campos internos innecesarios.
+       - 0 resultados -> code '0' (llave inexistente o cambiada).
+       - >0 resultados -> code '1' + maneuvers_data.
+       - Mensajes de error GENÉRICOS: jamás devolver stack traces, nombres de
+         colección ni detalles de Mongo al cliente.
+       - Respetar estilo del archivo (logger, 'use strict', comentarios Step).
+  B-2  En ROUTES/maneuver.js: router.get('/monitor/', ...). CORS ya está.
+  B-3  (Opcional recomendado) handle_maneuver acepta man_moni_key en update
+       (sanitizada con sanitizeId) para asignar llaves desde el panel admin
+       en vez de editar Mongo a mano.
+  B-4  Datos semilla para pruebas: 3+ maniobras con man_moni_key='DEMO-2026'
+       (una con man_gps_link válido, una en 'PENDIENTE', una FINALIZADA) y
+       1 maniobra con otra llave para probar el aislamiento.
+  B-5  (Opcional, recomendado para producción) rate limiting en /monitor/
+       (express-rate-limit, p. ej. 30 req/min por IP) para frenar fuerza bruta
+       de llaves; llaves asignadas por el admin con >=10 caracteres aleatorios.
+  ACEPTACIÓN: curl localhost:8080/maneuvers/monitor/?key=DEMO-2026 -> code 1 y
+  solo sus maniobras; llave ajena no las ve; llave falsa -> code 0; vacía -> -1;
+  ?key[$ne]=x -> -1; ?key={"$gt":""} -> -1; key con ' " ; $ { } -> -1 o 0,
+  NUNCA datos de otros ni error 500 con detalles.
+
+────────────────────────────────────────────────────────────────────────────────
+FASE 2 · AGENTE SCAFFOLD — Proyecto base + servicios + llave
+Depende de: F1 | Entrega: app arranca, flujo de llave completo con UI mínima
+────────────────────────────────────────────────────────────────────────────────
+  S-1  Crear til_tracker con Vite (plantilla react) + dependencias:
+       axios, @tanstack/react-query, three, animejs.
+  S-2  .env.development / .env.production / .env.example / render.yaml
+       (copiar patrón exacto de til_forwarder).
+  S-3  services/api.js + services/monitorService.js (contrato de F1).
+       La llave SIEMPRE se envía vía axios { params: { key } } para que quede
+       URL-encoded automáticamente; nunca concatenada a mano en la URL.
+  S-4  utils/security.js:
+       - isValidKeyFormat(k): /^[A-Za-z0-9_-]{4,100}$/ — misma allowlist que
+         el backend (UX inmediata; la seguridad real vive en el backend).
+       - isSafeGpsLink(url): new URL() + protocolo estrictamente http/https;
+         rechaza javascript:, data:, vbscript:, file: y valores 'PENDIENTE'/vacíos.
+  S-5  hooks/useMoniKey.js + hooks/useManeuvers.js con la lógica:
+       - Arranque: hay llave guardada -> consultar directo sin pedirla.
+       - code '1' -> mostrar maniobras.
+       - code '0'/'-1' -> BORRAR llave guardada y mostrar KeyGate con mensaje
+         "Tu llave ya no es válida, ingresa la nueva".
+       - Error de red -> NO borrar llave; estado "sin conexión" + reintentar.
+       - En localStorage se guarda ÚNICAMENTE la llave ya validada por formato.
+  S-6  App.jsx: conmuta KeyGate <-> TrackerView. KeyGate funcional (sin estilo
+       final aún): input con maxLength=100, validación isValidKeyFormat antes
+       de enviar (con mensaje "La llave solo puede contener letras, números,
+       guion y guion bajo"), guardado al éxito.
+  ACEPTACIÓN: primera visita pide llave; recarga entra directo; cambiar la
+  llave en la BD y recargar -> la app la borra y vuelve a pedirla; pegar
+  payloads con símbolos en el input -> se rechazan sin llegar al servidor.
+
+────────────────────────────────────────────────────────────────────────────────
+FASE 3 · AGENTE UI DE DATOS — Tarjetas y detalle (solo lectura)
+Depende de: F2 | Entrega: toda la información visible y correcta
+────────────────────────────────────────────────────────────────────────────────
+  U-1  Portar de til_forwarder/src/pages/RutasSeguimiento.jsx a utils/maneuver.js:
+       parseEvents() y statusColor() (copiar lógica, no reescribir).
+  U-2  ManeuverCard.jsx — VISTA RÁPIDA con exactamente:
+       contenedores (cantidad + IDs de man_containers), transportista,
+       avance (ProgressRing con man_progress), ubicación (man_current_location),
+       estatus (StatusChip con man_current_status) + botón desplegable (chevron).
+  U-3  ManeuverDetail.jsx — TODOS los datos al desplegar: cliente, tipo,
+       modalidad, fechas despacho/término, ejecutivo, agente, origen/destino,
+       paradas intermedias, eco, operador, nota, EventsTimeline (historial),
+       ContainerList (tamaño/pies, tipo, contenido, peso/kg).
+       PROHIBIDO cualquier input/form: 100% visualización.
+  U-4  REGLA XSS (aplica a toda la fase): todos los datos de la BD se
+       renderizan como texto vía JSX (React escapa por defecto). PROHIBIDO
+       dangerouslySetInnerHTML e innerHTML en todo el proyecto. Así, aunque
+       un dato malicioso llegara a la BD, no se ejecuta en el navegador.
+  U-5  GPSCanvas.jsx dentro del detalle:
+       - Valida el link con isSafeGpsLink (solo http/https; un man_gps_link
+         con javascript: u otro esquema se trata como NO REGISTRADO).
+       - Con link válido: canvas con animación tipo radar/ruta estilizada +
+         botón "ABRIR GPS EN VIVO" -> window.open(url, '_blank',
+         'noopener,noreferrer') (los portales GPS suelen bloquear iframes con
+         X-Frame-Options; el canvas es el marco visual).
+       - Sin link (o link inseguro): el canvas dibuja la leyenda
+         "MAPA NO DISPONIBLE" sobre retícula tenue.
+       - Canvas responsivo (resize por devicePixelRatio).
+  U-6  TrackerView.jsx: header "TIL TRACKER" con nombre del cliente, contador
+       de maniobras, botón "cambiar llave" (borra la guardada), estado vacío
+       elegante.
+  ACEPTACIÓN: con DEMO-2026 se ven las 3 maniobras con sus 5 datos rápidos;
+  el desplegable muestra todo; maniobra sin link -> "MAPA NO DISPONIBLE";
+  con link -> abre el GPS en pestaña nueva; no existe ningún campo editable;
+  grep del proyecto sin dangerouslySetInnerHTML/innerHTML.
+
+────────────────────────────────────────────────────────────────────────────────
+FASE 4 · AGENTE MOTION — Three.js, anime.js, parallax
+Depende de: F3 (y tokens de F5) | Entrega: experiencia animada completa
+────────────────────────────────────────────────────────────────────────────────
+  M-1  ThreeBackground.jsx: canvas fijo a pantalla completa con partículas /
+       malla low-poly; cámara y color reaccionan a la posición de scroll.
+       Degradación: estático si prefers-reduced-motion o WebGL no disponible;
+       densidad reducida en móvil.
+  M-2  utils/animations.js: on-scroll con IntersectionObserver + anime.js:
+       entrada escalonada (stagger) de tarjetas, fade/slide de secciones,
+       count-up del % de avance, transición suave del desplegable.
+  M-3  ParallaxLayer.jsx: desplazamiento diferencial de capas decorativas
+       ligado al scroll SOLO cuando useIsDesktop() (>=1024px). En móvil y
+       tablet: desactivado por completo.
+  M-4  Rendimiento: requestAnimationFrame unificado, listeners pasivos,
+       pausar three.js con document.hidden, sin jank al hacer scroll en móvil.
+  ACEPTACIÓN: 60fps aparentes en escritorio; móvil sin parallax y fluido;
+  con prefers-reduced-motion todo queda estático pero usable.
+
+────────────────────────────────────────────────────────────────────────────────
+FASE 5 · AGENTE ESTILO — Glassmorphism + Neumorphism + Responsivo
+Depende de: F2 (puede correr en paralelo con F3)
+────────────────────────────────────────────────────────────────────────────────
+  E-1  styles/tokens.css: paleta (tema oscuro base), radios, sombras neumo,
+       blur glass, tipografía fluida con clamp().
+  E-2  glass.css: tarjetas y paneles con backdrop-filter: blur, fondo rgba,
+       borde translúcido (mismo lenguaje de las tarjetas de contenedores de
+       RutasSeguimiento) + fallback si backdrop-filter no está soportado.
+  E-3  neumo.css: inputs, botones, chips y ProgressRing con doble sombra
+       (clara arriba-izq / oscura abajo-der) y estados hover/active/focus.
+  E-4  layout.css: grid 1 col (<768px) / 2 col (768-1199px) / 3 col (>=1200px);
+       KeyGate centrado en cualquier resolución; targets táctiles >=44px;
+       scroll horizontal prohibido; probar 360, 768, 1024, 1440, 1920 px.
+  ACEPTACIÓN: identidad glass+neumo consistente en KeyGate, tarjetas, detalle
+  y canvas; sin desbordes en ninguna resolución.
+
+────────────────────────────────────────────────────────────────────────────────
+FASE 6 · ORQUESTADOR — Integración local y en línea
+Depende de: F1-F5
+────────────────────────────────────────────────────────────────────────────────
+  I-1  LOCAL: maylob_backend con APP_ENV=local + Mongo local (npm start,
+       puerto 8080) y til_tracker con npm run dev; verificar CORS y .env.
+  I-2  EN LÍNEA: redeploy del backend en Render (incluye /monitor/);
+       til_tracker como static site en Render con su render.yaml y
+       VITE_API_URL de producción; probar el flujo completo en la URL pública.
+  I-3  Revisión de código transversal: contratos respetados, sin campos
+       editables, llave nunca expuesta en la respuesta del API, cero
+       dangerouslySetInnerHTML, consulta Mongo solo por igualdad literal.
+
+────────────────────────────────────────────────────────────────────────────────
+FASE 7 · AGENTE QA — Verificación end-to-end (funcional + seguridad)
+Depende de: F6
+────────────────────────────────────────────────────────────────────────────────
+  Q-1  Flujo llave: primera vez pide llave; éxito -> persiste; recarga ->
+       entra directo; llave cambiada/borrada en BD -> re-solicita; llave
+       ajena no muestra maniobras de otros.
+  Q-2  SUITE DE INYECCIÓN (directo al API con curl, saltándose el frontend):
+       - ?key[$ne]=x            -> code -1, sin datos
+       - ?key[$gt]=             -> code -1, sin datos
+       - ?key={"$where":"1"}    -> code -1/0, sin datos
+       - ?key=DEMO-2026'||'1==1 -> los símbolos se eliminan, sin fuga de datos
+       - ?key=<script>alert(1)</script> -> rechazada, sin datos
+       - ?key= (vacía) y sin parámetro  -> code -1
+       - Llave de 5000 caracteres        -> truncada/rechazada, sin error 500
+       En NINGÚN caso se devuelven maniobras de otra llave, stack traces ni
+       metadatos de Mongo.
+  Q-3  XSS almacenado: sembrar una maniobra con man_note =
+       "<img src=x onerror=alert(1)>" y verificar que se pinta como texto
+       plano y no se ejecuta. GPS link con javascript:alert(1) -> el canvas
+       muestra "MAPA NO DISPONIBLE".
+  Q-4  Vista rápida: los 5 datos correctos por maniobra; desplegable con
+       todos los datos; timeline y contenedores correctos.
+  Q-5  Canvas GPS: sin link -> "MAPA NO DISPONIBLE"; con link http(s) ->
+       abre GPS en pestaña nueva con noopener.
+  Q-6  Responsivo/motion: 360/768/1024/1440 px (Playwright, ya usado en
+       til_forwarder); parallax presente solo >=1024px; caída de red no
+       borra la llave.
+  Q-7  Reporte final de QA con evidencia (capturas y salidas de la suite).
+
+--------------------------------------------------------------------------------
+6. SEGURIDAD — MODELO DE AMENAZAS Y DEFENSAS (resumen transversal)
+--------------------------------------------------------------------------------
+  AMENAZA                              DEFENSA (dónde)
+  ---------------------------------    -----------------------------------------
+  Inyección de operadores NoSQL        typeof === 'string' + sanitizeId allowlist
+  (?key[$ne]=, $gt, $where, regex)     + consulta solo por igualdad literal (B-1)
+  Extracción masiva probando llaves    Llaves largas aleatorias + rate limit
+  (fuerza bruta / enumeración)         30 req/min (B-5) + respuestas genéricas
+  XSS reflejado/almacenado             React escapa por defecto; prohibido
+  (payloads en llave o en datos BD)    dangerouslySetInnerHTML (U-4); input con
+                                       allowlist en KeyGate (S-4/S-6)
+  Link GPS malicioso en BD             isSafeGpsLink: solo http/https; bloquea
+  (javascript:, data:)                 javascript:/data:; noopener,noreferrer (U-5)
+  Fuga de información en errores       Mensajes genéricos, sin stack traces ni
+                                       detalles de Mongo (B-1)
+  Fuga de la llave                     Nunca viaja en la respuesta del API
+                                       (proyección B-1); solo params URL-encoded
+  Escritura desde la app de usuario    La app solo consume UN endpoint GET;
+                                       cero formularios (U-3)
+  PRINCIPIO RECTOR: el frontend valida por UX; el BACKEND es la única frontera
+  de confianza y re-sanitiza TODO. Nada del request toca la consulta Mongo sin
+  pasar por sanitizeId, y el filtro es siempre igualdad literal.
+
+--------------------------------------------------------------------------------
+7. RIESGOS Y DECISIONES
+--------------------------------------------------------------------------------
+  R-1  Asignación de llaves: hoy man_moni_key solo se puede poner editando la
+       BD. Mitigación: Tarea B-3 (asignarla desde el panel admin). DECIDIR.
+       Recomendación: llaves generadas aleatorias >=10 chars (allowlist), no
+       nombres adivinables tipo "CLIENTE1".
+  R-2  Links GPS de terceros bloquean iframe (X-Frame-Options): por eso el
+       canvas es el marco visual y el link abre en pestaña nueva.
+  R-3  Una llave "válida" sin maniobras activas es indistinguible de una llave
+       inexistente (la llave vive solo en las maniobras). Mensaje neutro:
+       "Llave sin maniobras activas o inválida". Alternativa futura: colección
+       de llaves propia.
+  R-4  backdrop-filter y WebGL en dispositivos viejos: fallbacks definidos
+       (E-2 y M-1).
+  R-5  Rate limiting (B-5) agrega una dependencia nueva al backend
+       (express-rate-limit). Si se pospone, documentarlo como deuda de
+       seguridad antes de publicar la URL.
+
+--------------------------------------------------------------------------------
+8. CRITERIO DE TERMINADO (DoD)
+--------------------------------------------------------------------------------
+  [ ] Endpoint /maneuvers/monitor/ filtra por man_moni_key + man_moni_enable.
+  [ ] Suite de inyección (Q-2) pasa completa: ningún payload NoSQL/XSS extrae
+      datos ni provoca errores con detalles internos.
+  [ ] Llave persistida; solo se re-solicita si ya no existe o fue cambiada.
+  [ ] Vista rápida: contenedores, transportista, avance, ubicación, estatus
+      + desplegable con todos los datos, todo SOLO LECTURA.
+  [ ] Canvas GPS con link del admin (solo http/https) o leyenda
+      "MAPA NO DISPONIBLE".
+  [ ] Glassmorphism + neumorphism + parallax (solo escritorio) + three.js +
+      anime.js on-scroll, responsivo total.
+  [ ] Corre en local (Mongo local) y en línea (Render) sin cambios de código,
+      solo variables de entorno.
+================================================================================
