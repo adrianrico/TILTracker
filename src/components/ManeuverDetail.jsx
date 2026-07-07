@@ -1,0 +1,66 @@
+import EventsTimeline from './EventsTimeline'
+import ContainerList from './ContainerList'
+import GPSCanvas from './GPSCanvas'
+
+function Field({ label, value }) {
+  return (
+    <div className="maneuver-detail__field">
+      <span className="maneuver-detail__field-label">{label}</span>
+      <span className="maneuver-detail__field-value">{value || 'PENDIENTE'}</span>
+    </div>
+  )
+}
+
+export default function ManeuverDetail({ maneuver }) {
+  const stops = maneuver.man_intermediate_stops ?? []
+
+  return (
+    <div className="maneuver-detail">
+      <div className="maneuver-detail__grid">
+        <Field label="Cliente" value={maneuver.man_client} />
+        <Field label="Tipo" value={maneuver.man_type} />
+        <Field label="Modalidad" value={maneuver.man_modality} />
+        <Field label="Fecha de despacho" value={maneuver.man_dispatch_date} />
+        <Field label="Fecha de término" value={maneuver.man_finish_date} />
+        <Field label="Ejecutivo" value={maneuver.man_executive} />
+        <Field label="Agente" value={maneuver.man_agent} />
+        <Field label="Origen" value={maneuver.man_load_location} />
+        <Field label="Destino" value={maneuver.man_unload_location} />
+        <Field label="Eco" value={maneuver.man_eco} />
+        <Field label="Operador" value={maneuver.man_operator} />
+      </div>
+
+      {stops.length > 0 && (
+        <div className="maneuver-detail__stops">
+          <h3 className="maneuver-detail__section-title">Paradas intermedias</h3>
+          <ul>
+            {stops.map((s, i) => (
+              <li key={i}>{s.stop_name}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {maneuver.man_note && (
+        <div className="maneuver-detail__note">
+          <h3 className="maneuver-detail__section-title">Nota</h3>
+          <p>{maneuver.man_note}</p>
+        </div>
+      )}
+
+      <div className="maneuver-detail__section">
+        <h3 className="maneuver-detail__section-title">Historial de eventos</h3>
+        <EventsTimeline events={maneuver.man_events} />
+      </div>
+
+      <div className="maneuver-detail__section">
+        <ContainerList containers={maneuver.man_containers} />
+      </div>
+
+      <div className="maneuver-detail__section">
+        <h3 className="maneuver-detail__section-title">Ubicación GPS</h3>
+        <GPSCanvas gpsLink={maneuver.man_gps_link} />
+      </div>
+    </div>
+  )
+}

@@ -1,1 +1,98 @@
-/* placeholder — filled in Fase 5 */
+:root {
+  --bg-0: #0a0f1a;
+  --bg-1: #0e1524;
+  --surface: rgba(255, 255, 255, 0.06);
+  --surface-strong: rgba(255, 255, 255, 0.1);
+  --border: rgba(255, 255, 255, 0.14);
+  --text-0: #e6ecf5;
+  --text-1: #a7b3c6;
+  --text-2: #6b7688;
+  --accent: #5eead4;
+  --accent-strong: #6366f1;
+
+  --status-orange: #f59e0b;
+  --status-green: #34d399;
+  --status-blue: #60a5fa;
+  --status-red: #f87171;
+  --status-default: #94a3b8;
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+
+  --shadow-light: rgba(255, 255, 255, 0.06);
+  --shadow-dark: rgba(0, 0, 0, 0.55);
+
+  --space-1: clamp(0.5rem, 0.45rem + 0.25vw, 0.75rem);
+  --space-2: clamp(0.75rem, 0.65rem + 0.4vw, 1.25rem);
+  --space-3: clamp(1.25rem, 1rem + 0.8vw, 2rem);
+
+  --font-size-sm: clamp(0.78rem, 0.74rem + 0.15vw, 0.88rem);
+  --font-size-md: clamp(0.95rem, 0.9rem + 0.2vw, 1.05rem);
+  --font-size-lg: clamp(1.3rem, 1.1rem + 0.8vw, 1.9rem);
+  --font-size-xl: clamp(1.8rem, 1.4rem + 1.6vw, 2.8rem);
+}
+
+:root[data-theme='light'] {
+  --bg-0: #eef2f8;
+  --bg-1: #e6ebf4;
+  --surface: rgba(255, 255, 255, 0.55);
+  --surface-strong: rgba(255, 255, 255, 0.75);
+  --border: rgba(15, 23, 42, 0.1);
+  --text-0: #0f172a;
+  --text-1: #3b4658;
+  --text-2: #6b7688;
+  --shadow-light: rgba(255, 255, 255, 0.7);
+  --shadow-dark: rgba(148, 163, 184, 0.35);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    --bg-0: #eef2f8;
+    --bg-1: #e6ebf4;
+    --surface: rgba(255, 255, 255, 0.55);
+    --surface-strong: rgba(255, 255, 255, 0.75);
+    --border: rgba(15, 23, 42, 0.1);
+    --text-0: #0f172a;
+    --text-1: #3b4658;
+    --text-2: #6b7688;
+    --shadow-light: rgba(255, 255, 255, 0.7);
+    --shadow-dark: rgba(148, 163, 184, 0.35);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(99, 102, 241, 0.16), transparent 60%),
+    radial-gradient(1000px 500px at 110% 10%, rgba(94, 234, 212, 0.12), transparent 60%),
+    var(--bg-0);
+  color: var(--text-0);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: var(--font-size-md);
+  overflow-x: hidden;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

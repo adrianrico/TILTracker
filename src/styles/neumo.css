@@ -1,1 +1,110 @@
-/* placeholder — filled in Fase 5 */
+.neumo {
+  box-shadow: 10px 10px 22px var(--shadow-dark), -8px -8px 18px var(--shadow-light);
+}
+
+.neumo-inset {
+  box-shadow: inset 6px 6px 12px var(--shadow-dark), inset -6px -6px 12px var(--shadow-light);
+}
+
+input.neumo-inset {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-0);
+  padding: var(--space-2);
+  font-size: var(--font-size-md);
+  width: 100%;
+  min-height: 44px;
+  transition: box-shadow 0.2s ease;
+}
+
+input.neumo-inset:focus {
+  outline: none;
+  box-shadow: inset 6px 6px 12px var(--shadow-dark), inset -6px -6px 12px var(--shadow-light),
+    0 0 0 2px var(--accent);
+}
+
+.neumo-button {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  min-height: 44px;
+  min-width: 44px;
+  color: var(--text-0);
+  box-shadow: 6px 6px 14px var(--shadow-dark), -6px -6px 14px var(--shadow-light);
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.neumo-button:hover {
+  box-shadow: 4px 4px 10px var(--shadow-dark), -4px -4px 10px var(--shadow-light);
+}
+
+.neumo-button:active {
+  box-shadow: inset 4px 4px 10px var(--shadow-dark), inset -4px -4px 10px var(--shadow-light);
+  transform: translateY(1px);
+}
+
+.neumo-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Status chip ------------------------------------------------------- */
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.status-chip::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status-chip--orange { color: var(--status-orange); background: color-mix(in srgb, var(--status-orange) 16%, transparent); }
+.status-chip--green  { color: var(--status-green);  background: color-mix(in srgb, var(--status-green) 16%, transparent); }
+.status-chip--blue   { color: var(--status-blue);   background: color-mix(in srgb, var(--status-blue) 16%, transparent); }
+.status-chip--red    { color: var(--status-red);    background: color-mix(in srgb, var(--status-red) 16%, transparent); }
+.status-chip--default{ color: var(--status-default);background: color-mix(in srgb, var(--status-default) 16%, transparent); }
+
+/* Progress ring ------------------------------------------------------ */
+
+.progress-ring {
+  position: relative;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.progress-ring__track {
+  stroke: var(--border);
+}
+
+.progress-ring__fill {
+  stroke: var(--accent);
+  transition: stroke 0.3s ease;
+}
+
+.progress-ring__label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-0);
+}

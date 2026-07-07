@@ -3,6 +3,8 @@ import { useMoniKey } from './hooks/useMoniKey'
 import { useManeuvers } from './hooks/useManeuvers'
 import KeyGate from './components/KeyGate'
 import TrackerView from './components/TrackerView'
+import ThreeBackground from './components/ThreeBackground'
+import ParallaxLayer from './components/ParallaxLayer'
 
 export default function App() {
   const { key, saveKey, clearKey } = useMoniKey()
@@ -27,18 +29,24 @@ export default function App() {
     setNotice('')
   }
 
-  if (!key) {
-    return <KeyGate onSubmit={handleSubmitKey} notice={notice} />
-  }
-
   return (
-    <TrackerView
-      maneuvers={maneuvers}
-      isLoading={isLoading}
-      isRateLimited={isRateLimited}
-      isNetworkError={isNetworkError}
-      onRetry={refetch}
-      onChangeKey={handleChangeKey}
-    />
+    <>
+      <ThreeBackground />
+      <ParallaxLayer speed={0.12} className="parallax-layer--a" />
+      <ParallaxLayer speed={-0.08} className="parallax-layer--b" />
+
+      {!key ? (
+        <KeyGate onSubmit={handleSubmitKey} notice={notice} />
+      ) : (
+        <TrackerView
+          maneuvers={maneuvers}
+          isLoading={isLoading}
+          isRateLimited={isRateLimited}
+          isNetworkError={isNetworkError}
+          onRetry={refetch}
+          onChangeKey={handleChangeKey}
+        />
+      )}
+    </>
   )
 }

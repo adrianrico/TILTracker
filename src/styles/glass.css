@@ -1,1 +1,19 @@
-/* placeholder — filled in Fase 5 */
+.glass {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+}
+
+/* Fallback for browsers without backdrop-filter support: a flatter,
+   more opaque surface keeps text readable without the blur effect. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass {
+    background: var(--bg-1);
+  }
+}
+
+.container-card.glass {
+  border-radius: var(--radius-sm);
+}

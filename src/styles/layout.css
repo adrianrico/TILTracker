@@ -1,1 +1,442 @@
-/* placeholder — filled in Fase 5 */
+/* Background layers (three.js + parallax) --------------------------------- */
+
+.three-background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.three-background canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.parallax-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.parallax-layer::before,
+.parallax-layer::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.35;
+}
+
+.parallax-layer--a::before {
+  width: 380px;
+  height: 380px;
+  top: -80px;
+  left: -100px;
+  background: var(--accent-strong);
+}
+
+.parallax-layer--b::after {
+  width: 320px;
+  height: 320px;
+  bottom: -60px;
+  right: -80px;
+  background: var(--accent);
+}
+
+.key-gate,
+.tracker-view {
+  position: relative;
+  z-index: 1;
+}
+
+/* Key gate ------------------------------------------------------------ */
+
+.key-gate {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3);
+}
+
+.key-gate__card {
+  width: min(420px, 100%);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.key-gate__title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  background: linear-gradient(120deg, var(--accent), var(--accent-strong));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.key-gate__subtitle {
+  margin: 0;
+  color: var(--text-1);
+  font-size: var(--font-size-sm);
+}
+
+.key-gate__notice {
+  margin: 0;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--status-orange) 14%, transparent);
+  color: var(--status-orange);
+  font-size: var(--font-size-sm);
+}
+
+.key-gate__error {
+  margin: 0;
+  color: var(--status-red);
+  font-size: var(--font-size-sm);
+}
+
+.key-gate__button {
+  align-self: center;
+  width: 100%;
+  font-weight: 600;
+}
+
+/* Tracker view ---------------------------------------------------------- */
+
+.tracker-view {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--space-2) var(--space-3) calc(var(--space-3) * 2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.tracker-view__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+}
+
+.tracker-view__title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.tracker-view__client {
+  margin: 2px 0 0;
+  color: var(--text-0);
+  font-weight: 600;
+}
+
+.tracker-view__count {
+  margin: 2px 0 0;
+  color: var(--text-1);
+  font-size: var(--font-size-sm);
+}
+
+.tracker-view__state,
+.tracker-view__empty {
+  padding: var(--space-2) var(--space-3);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-1);
+}
+
+.tracker-view__loading {
+  color: var(--text-1);
+}
+
+.tracker-view__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+}
+
+@media (min-width: 768px) {
+  .tracker-view__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1200px) {
+  .tracker-view__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Maneuver card ----------------------------------------------------------- */
+
+.maneuver-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.maneuver-card__summary {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: var(--space-2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  text-align: left;
+}
+
+.maneuver-card__summary-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.maneuver-card__id {
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+  color: var(--accent);
+  letter-spacing: 0.03em;
+}
+
+.maneuver-card__field {
+  display: flex;
+  gap: 6px;
+  font-size: var(--font-size-sm);
+  overflow: hidden;
+}
+
+.maneuver-card__field-label {
+  color: var(--text-2);
+  flex-shrink: 0;
+}
+
+.maneuver-card__field-value {
+  color: var(--text-0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.maneuver-card__summary-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.maneuver-card__chevron {
+  display: inline-block;
+  color: var(--text-1);
+  transition: transform 0.25s ease;
+}
+
+.maneuver-card__chevron--open {
+  transform: rotate(180deg);
+}
+
+.maneuver-card__detail {
+  border-top: 1px solid var(--border);
+  padding: var(--space-2) var(--space-3) var(--space-3);
+}
+
+/* Maneuver detail ----------------------------------------------------------- */
+
+.maneuver-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.maneuver-detail__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--space-2);
+}
+
+.maneuver-detail__field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.maneuver-detail__field-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-2);
+}
+
+.maneuver-detail__field-value {
+  color: var(--text-0);
+  font-size: var(--font-size-sm);
+}
+
+.maneuver-detail__section-title {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+.maneuver-detail__stops ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.maneuver-detail__stops li {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  font-size: var(--font-size-sm);
+}
+
+.maneuver-detail__note p {
+  margin: 0;
+  color: var(--text-0);
+  font-size: var(--font-size-sm);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Container list -------------------------------------------------------- */
+
+.container-list__title {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+.container-list__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--space-1);
+}
+
+.container-card {
+  padding: var(--space-1) var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--font-size-sm);
+}
+
+.container-card__id {
+  font-weight: 700;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+}
+
+.container-card__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.container-card__row--empty {
+  color: var(--text-2);
+}
+
+.container-card__label {
+  color: var(--text-2);
+}
+
+/* Events timeline --------------------------------------------------------- */
+
+.events-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.events-timeline__empty {
+  color: var(--text-2);
+  font-size: var(--font-size-sm);
+}
+
+.events-timeline__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.events-timeline__dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.events-timeline__content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-sm);
+}
+
+.events-timeline__time {
+  color: var(--text-2);
+}
+
+.events-timeline__location {
+  color: var(--text-0);
+}
+
+.events-timeline__percentage {
+  color: var(--text-1);
+}
+
+/* GPS canvas -------------------------------------------------------------- */
+
+.gps-canvas {
+  padding: var(--space-1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.gps-canvas__surface {
+  width: 100%;
+  height: 200px;
+  border-radius: var(--radius-sm);
+  display: block;
+}
+
+.gps-canvas__button {
+  align-self: flex-start;
+}
+
+/* Global responsive guardrails --------------------------------------------- */
+
+@media (max-width: 767px) {
+  .tracker-view__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
