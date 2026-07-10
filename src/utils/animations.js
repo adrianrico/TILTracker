@@ -1,4 +1,4 @@
-import { animate, stagger } from 'animejs'
+import { animate, remove, set, stagger } from 'animejs'
 
 // Single shared requestAnimationFrame ticker: every scroll/parallax/three.js
 // consumer subscribes here instead of running its own rAF loop, and the
@@ -78,6 +78,22 @@ export function fadeSlideIn(el) {
     translateY: [10, 0],
     duration: 400,
     ease: 'outQuad',
+  })
+}
+
+export function growIn(el) {
+  if (!el) return
+  remove(el)
+  if (prefersReducedMotion()) {
+    set(el, { scale: 1, opacity: 1 })
+    return
+  }
+  set(el, { scale: 0, opacity: 0 })
+  animate(el, {
+    scale: [0, 1],
+    opacity: [0, 1],
+    duration: 420,
+    ease: 'outBack',
   })
 }
 

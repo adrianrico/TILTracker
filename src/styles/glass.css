@@ -1,6 +1,5 @@
 .glass {
   background: var(--surface);
-  border: 1px solid var(--border);
   border-radius: var(--radius-md);
   backdrop-filter: blur(16px) saturate(140%);
   -webkit-backdrop-filter: blur(16px) saturate(140%);

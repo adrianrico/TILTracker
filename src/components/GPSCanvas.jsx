@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { isSafeGpsLink } from '../utils/security'
 
 function drawUnavailable(ctx, w, h) {
@@ -57,9 +57,40 @@ function drawRadar(ctx, w, h, angle) {
   ctx.fill()
 }
 
+// Cover-fit: fills the canvas without distorting the image's aspect ratio,
+// cropping whatever overflows on the longer axis...
+function drawSnapshot(ctx, img, w, h) {
+  ctx.clearRect(0, 0, w, h)
+  const scale = Math.max(w / img.naturalWidth, h / img.naturalHeight)
+  const dw = img.naturalWidth * scale
+  const dh = img.naturalHeight * scale
+  ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh)
+}
+
 export default function GPSCanvas({ gpsLink }) {
   const canvasRef = useRef(null)
+  const imageRef = useRef(null)
+  const [imageReady, setImageReady] = useState(false)
   const isSafe = isSafeGpsLink(gpsLink)
+
+  // Load whatever man_gps_link points to as an image; if it isn't one (or
+  // fails to load), imageReady stays false and the radar placeholder covers it...
+  useEffect(() => {
+    imageRef.current = null
+    setImageReady(false)
+    if (!isSafe) return
+
+    const img = new Image()
+    img.onload = () => {
+      imageRef.current = img
+      setImageReady(true)
+    }
+    img.src = gpsLink
+
+    return () => {
+      img.onload = null
+    }
+  }, [gpsLink, isSafe])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -82,7 +113,9 @@ export default function GPSCanvas({ gpsLink }) {
     function render() {
       const w = canvas.clientWidth
       const h = canvas.clientHeight
-      if (isSafe) {
+      if (imageReady && imageRef.current) {
+        drawSnapshot(ctx, imageRef.current, w, h)
+      } else if (isSafe) {
         drawRadar(ctx, w, h, angle)
       } else {
         drawUnavailable(ctx, w, h)
@@ -99,16 +132,18 @@ export default function GPSCanvas({ gpsLink }) {
     resizeObserver.observe(canvas)
     resize()
 
+    const shouldAnimate = isSafe && !imageReady && !prefersReducedMotion
+
     function handleVisibility() {
       if (document.hidden) {
         if (frameId) cancelAnimationFrame(frameId)
         frameId = null
-      } else if (isSafe && !prefersReducedMotion && !frameId) {
+      } else if (shouldAnimate && !frameId) {
         frameId = requestAnimationFrame(loop)
       }
     }
 
-    if (isSafe && !prefersReducedMotion) {
+    if (shouldAnimate) {
       frameId = requestAnimationFrame(loop)
     }
     document.addEventListener('visibilitychange', handleVisibility)
@@ -118,20 +153,11 @@ export default function GPSCanvas({ gpsLink }) {
       resizeObserver.disconnect()
       document.removeEventListener('visibilitychange', handleVisibility)
     }
-  }, [isSafe])
-
-  function handleOpenGps() {
-    window.open(gpsLink, '_blank', 'noopener,noreferrer')
-  }
+  }, [isSafe, imageReady])
 
   return (
     <div className="gps-canvas glass">
       <canvas ref={canvasRef} className="gps-canvas__surface" />
-      {isSafe && (
-        <button className="gps-canvas__button neumo-button" onClick={handleOpenGps}>
-          Abrir GPS en vivo
-        </button>
-      )}
     </div>
   )
 }

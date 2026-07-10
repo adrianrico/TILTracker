@@ -1,7 +1,9 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  // Falls back to the deployed backend so a missing/unset VITE_API_URL never
+  // silently resolves to nothing — production is the safe default, not local.
+  baseURL: import.meta.env.VITE_API_URL || 'https://maylob-backend.onrender.com',
   timeout: 10000,
   headers: { 'Content-Type': 'application/json' },
   // Anything below 500 resolves normally (400 = rejected key, 429 = rate

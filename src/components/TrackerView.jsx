@@ -1,16 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import ActionMenu from './ActionMenu'
 import ManeuverCard from './ManeuverCard'
 import ManeuverFilters from './ManeuverFilters'
+import ManeuverStats from './ManeuverStats'
+import PollingStatus from './PollingStatus'
 import { staggerFadeIn } from '../utils/animations'
-import { filterManeuvers } from '../utils/maneuver'
+import { filterManeuvers, sortByDispatchDate } from '../utils/maneuver'
 
 export default function TrackerView({
   maneuvers,
   isLoading,
+  isFetching,
   isRateLimited,
   isNetworkError,
   onRetry,
+  onRefresh,
   onChangeKey,
+  pollingEnabled,
+  onTogglePolling,
 }) {
   const clientName = maneuvers[0]?.man_client
   const listRef = useRef(null)
@@ -18,11 +25,13 @@ export default function TrackerView({
 
   const [dispatchDate, setDispatchDate] = useState('')
   const [containerIds, setContainerIds] = useState([])
+  const [containerQuery, setContainerQuery] = useState('')
+  const [sortOrder, setSortOrder] = useState('desc')
 
-  const filteredManeuvers = useMemo(
-    () => filterManeuvers(maneuvers, { dispatchDate, containerIds }),
-    [maneuvers, dispatchDate, containerIds]
-  )
+  const filteredManeuvers = useMemo(() => {
+    const filtered = filterManeuvers(maneuvers, { dispatchDate, containerIds, containerQuery })
+    return sortByDispatchDate(filtered, sortOrder)
+  }, [maneuvers, dispatchDate, containerIds, containerQuery, sortOrder])
 
   function handleAddContainerIds(ids) {
     setContainerIds((prev) => {
@@ -45,10 +54,11 @@ export default function TrackerView({
   function handleClearFilters() {
     setDispatchDate('')
     setContainerIds([])
+    setContainerQuery('')
   }
 
   // Stagger-in the list once, the first time data arrives — background
-  // refetches every 60s must not replay the entrance animation...
+  // refetches from polling must not replay the entrance animation...
   useEffect(() => {
     if (!hasAnimatedRef.current && maneuvers.length > 0 && listRef.current) {
       hasAnimatedRef.current = true
@@ -59,16 +69,17 @@ export default function TrackerView({
   return (
     <div className="tracker-view">
       <header className="tracker-view__header glass">
-        <div>
-          <h1 className="tracker-view__title">TIL TRACKER</h1>
-          {clientName && <p className="tracker-view__client">{clientName}</p>}
-          <p className="tracker-view__count">
-            {maneuvers.length} {maneuvers.length === 1 ? 'maniobra' : 'maniobras'}
-          </p>
-        </div>
-        <button className="tracker-view__change-key neumo-button" onClick={onChangeKey}>
-          Cambiar llave
-        </button>
+        <h1 className="tracker-view__title">TIL TRACKER</h1>
+        {clientName && <p className="tracker-view__client">BIENVENIDO: {clientName}</p>}
+        <PollingStatus enabled={pollingEnabled} />
+        <ManeuverStats maneuvers={maneuvers} />
+        <ActionMenu
+          onChangeKey={onChangeKey}
+          onRefresh={onRefresh}
+          refreshing={isFetching}
+          pollingEnabled={pollingEnabled}
+          onTogglePolling={onTogglePolling}
+        />
       </header>
 
       {isNetworkError && (
@@ -101,6 +112,10 @@ export default function TrackerView({
           containerIds={containerIds}
           onAddContainerIds={handleAddContainerIds}
           onRemoveContainerId={handleRemoveContainerId}
+          containerQuery={containerQuery}
+          onContainerQueryChange={setContainerQuery}
+          sortOrder={sortOrder}
+          onSortOrderChange={setSortOrder}
           onClear={handleClearFilters}
           resultCount={filteredManeuvers.length}
           totalCount={maneuvers.length}

@@ -7,7 +7,7 @@ const STROKE = 6
 const RADIUS = (SIZE - STROKE) / 2
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 
-export default function ProgressRing({ progress }) {
+export default function ProgressRing({ progress, cancelled = false }) {
   const target = parseProgress(progress)
   const circleRef = useRef(null)
   const labelRef = useRef(null)
@@ -31,7 +31,7 @@ export default function ProgressRing({ progress }) {
       value: target,
       duration: 900,
       easing: 'easeOutCubic',
-      update: () => {
+      onRender: () => {
         circle.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - state.value / 100))
         label.textContent = `${Math.round(state.value)}%`
       },
@@ -41,7 +41,10 @@ export default function ProgressRing({ progress }) {
   }, [target])
 
   return (
-    <div className="progress-ring neumo" style={{ width: SIZE, height: SIZE }}>
+    <div
+      className={`progress-ring neumo ${cancelled ? 'progress-ring--cancelled' : ''}`}
+      style={{ width: SIZE, height: SIZE }}
+    >
       <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
         <circle
           className="progress-ring__track"

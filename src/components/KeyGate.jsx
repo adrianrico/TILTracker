@@ -1,11 +1,20 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { isValidKeyFormat } from '../utils/security'
+import { growIn } from '../utils/animations'
 
 const FORMAT_ERROR = 'La llave solo puede contener letras, números, guion y guion bajo (4-100 caracteres).'
 
 export default function KeyGate({ onSubmit, notice }) {
   const [value, setValue] = useState('')
   const [error, setError] = useState('')
+  const buttonRef = useRef(null)
+  const hasText = value.trim().length > 0
+  const wasVisibleRef = useRef(false)
+
+  useEffect(() => {
+    if (hasText && !wasVisibleRef.current) growIn(buttonRef.current)
+    wasVisibleRef.current = hasText
+  }, [hasText])
 
   function handleSubmit(e) {
     e.preventDefault()
@@ -43,7 +52,12 @@ export default function KeyGate({ onSubmit, notice }) {
 
         {error && <p className="key-gate__error">{error}</p>}
 
-        <button className="key-gate__button neumo-button" type="submit">
+        <button
+          ref={buttonRef}
+          className={`key-gate__button neumo-button ${hasText ? '' : 'key-gate__button--hidden'}`}
+          type="submit"
+          disabled={!hasText}
+        >
           Ver mis maniobras
         </button>
       </form>

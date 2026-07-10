@@ -2,8 +2,6 @@ import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { monitorService } from '../services/monitorService'
 
-const REFETCH_INTERVAL = 60 * 1000
-
 // Normalizes the /monitor/ response into one of:
 //   { status: 'ok', maneuvers }
 //   { status: 'invalid_key' }   -> caller should clear the stored key
@@ -24,7 +22,7 @@ export function useManeuvers(key, { onInvalidKey } = {}) {
     queryKey: ['maneuvers', key],
     queryFn: () => fetchManeuvers(key),
     enabled: !!key,
-    refetchInterval: REFETCH_INTERVAL,
+    refetchInterval: false,
     retry: 1,
   })
 
@@ -38,6 +36,7 @@ export function useManeuvers(key, { onInvalidKey } = {}) {
   return {
     maneuvers: result?.status === 'ok' ? result.maneuvers : [],
     isLoading: query.isLoading,
+    isFetching: query.isFetching,
     isRateLimited: result?.status === 'rate_limited',
     isNetworkError: query.isError,
     refetch: query.refetch,
