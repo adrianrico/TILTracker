@@ -4,3 +4,9 @@ dist
 .env.*.local
 *.log
 .DS_Store
+
+# Claude Code / agent tooling (not part of the app)
+.claude/
+.agents/
+graphify-out/
+skills-lock.json
