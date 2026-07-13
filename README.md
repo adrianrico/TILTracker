@@ -5,7 +5,6 @@ SPA en React 19 + Vite para seguimiento en tiempo real de maniobras de transport
 ## Requisitos
 
 - Node.js 18+
-- El backend `maylob_backend` corriendo (local en `:8080`, o el ya desplegado en Render)
 
 ## Desarrollo local
 
@@ -14,7 +13,7 @@ npm install
 npm run dev
 ```
 
-Abre `http://localhost:5173`. En modo `dev`, Vite carga `.env.development` (`VITE_API_URL=http://localhost:8080`), así que necesitas `maylob_backend` corriendo en ese puerto.
+Abre `http://localhost:5173`. Tanto `npm run dev` como `npm run build` apuntan al backend ya desplegado en Render (`https://maylob-backend.onrender.com`) — no se necesita `maylob_backend` corriendo en local.
 
 ## Build de producción
 
@@ -23,12 +22,12 @@ npm run build
 npm run preview   # sirve dist/ localmente, igual que quedará en línea
 ```
 
-`vite build` corre en modo `production` y toma `VITE_API_URL` de `.env.production` (backend ya desplegado en Render). **No hay que tocar código para alternar entre local y producción** — Vite elige el archivo de entorno según el modo:
+`vite build` corre en modo `production` y toma `VITE_API_URL` de `.env.production`. **No hay que tocar código para alternar entre `dev` y `build`** — ambos usan el mismo backend en línea:
 
 | Archivo             | Se usa en      | `VITE_API_URL`                          |
 |---------------------|----------------|------------------------------------------|
-| `.env.development`  | `npm run dev`  | `http://localhost:8080`                   |
-| `.env.production`   | `npm run build`| URL del backend en Render                 |
+| `.env.development`  | `npm run dev`  | backend en línea (Render)                 |
+| `.env.production`   | `npm run build`| backend en línea (Render)                 |
 | `.env.example`      | referencia     | plantilla para nuevas variables           |
 
 ## Deploy en Render
