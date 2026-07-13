@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { monitorService } from '../services/monitorService'
 
 // Normalizes the /monitor/ response into one of:
@@ -18,6 +18,7 @@ async function fetchManeuvers(key) {
 }
 
 export function useManeuvers(key, { onInvalidKey } = {}) {
+  const queryClient = useQueryClient()
   const query = useQuery({
     queryKey: ['maneuvers', key],
     queryFn: () => fetchManeuvers(key),
@@ -30,8 +31,15 @@ export function useManeuvers(key, { onInvalidKey } = {}) {
   const isInvalidKey = result?.status === 'invalid_key'
 
   useEffect(() => {
-    if (isInvalidKey) onInvalidKey?.()
-  }, [isInvalidKey, onInvalidKey])
+    // Purge the cached invalid_key response so re-submitting the exact same
+    // key string (e.g. right after "cambiar llave") always triggers a fresh
+    // network request instead of replaying the stale rejection from cache
+    // for up to `staleTime` (30s).
+    if (isInvalidKey) {
+      queryClient.removeQueries({ queryKey: ['maneuvers', key], exact: true })
+      onInvalidKey?.()
+    }
+  }, [isInvalidKey, onInvalidKey, queryClient, key])
 
   return {
     maneuvers: result?.status === 'ok' ? result.maneuvers : [],
