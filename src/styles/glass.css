@@ -1,3 +1,7 @@
+/*
+ * GLASSMORPHISM — utilidad `.glass`: superficie translúcida con desenfoque
+ * del fondo. Se combina con otras clases (`glass neumo`).
+ */
 .glass {
   background: var(--surface);
   border-radius: var(--radius-md);

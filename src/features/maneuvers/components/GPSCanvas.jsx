@@ -1,0 +1,176 @@
+import { useEffect, useRef, useState } from 'react'
+import { isSafeGpsLink } from '../lib/gps'
+
+/** Estado "sin enlace GPS": cuadrícula tenue con el texto MAPA NO DISPONIBLE. */
+function drawUnavailable(ctx, w, h) {
+  ctx.clearRect(0, 0, w, h)
+  ctx.strokeStyle = 'rgba(148, 163, 184, 0.18)'
+  ctx.lineWidth = 1
+  const step = 24
+  for (let x = 0; x < w; x += step) {
+    ctx.beginPath()
+    ctx.moveTo(x, 0)
+    ctx.lineTo(x, h)
+    ctx.stroke()
+  }
+  for (let y = 0; y < h; y += step) {
+    ctx.beginPath()
+    ctx.moveTo(0, y)
+    ctx.lineTo(w, y)
+    ctx.stroke()
+  }
+
+  ctx.fillStyle = 'rgba(226, 232, 240, 0.55)'
+  ctx.font = '600 14px system-ui, sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('MAPA NO DISPONIBLE', w / 2, h / 2)
+}
+
+/** Estado "cargando": radar animado (`angle` en radianes) mientras llega la imagen. */
+function drawRadar(ctx, w, h, angle) {
+  ctx.clearRect(0, 0, w, h)
+  const cx = w / 2
+  const cy = h / 2
+  const maxR = Math.min(w, h) / 2 - 6
+
+  ctx.strokeStyle = 'rgba(94, 234, 212, 0.35)'
+  ctx.lineWidth = 1
+  for (let r = maxR / 3; r <= maxR; r += maxR / 3) {
+    ctx.beginPath()
+    ctx.arc(cx, cy, r, 0, Math.PI * 2)
+    ctx.stroke()
+  }
+
+  const gradient = ctx.createConicGradient(angle, cx, cy)
+  gradient.addColorStop(0, 'rgba(94, 234, 212, 0.45)')
+  gradient.addColorStop(0.15, 'rgba(94, 234, 212, 0)')
+  gradient.addColorStop(1, 'rgba(94, 234, 212, 0)')
+
+  ctx.fillStyle = gradient
+  ctx.beginPath()
+  ctx.moveTo(cx, cy)
+  ctx.arc(cx, cy, maxR, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.fillStyle = '#5eead4'
+  ctx.beginPath()
+  ctx.arc(cx, cy, 3, 0, Math.PI * 2)
+  ctx.fill()
+}
+
+/**
+ * Dibuja la imagen en modo "cover": llena el canvas sin deformarla y recorta
+ * lo que sobre en el eje más largo.
+ */
+function drawSnapshot(ctx, img, w, h) {
+  ctx.clearRect(0, 0, w, h)
+  const scale = Math.max(w / img.naturalWidth, h / img.naturalHeight)
+  const dw = img.naturalWidth * scale
+  const dh = img.naturalHeight * scale
+  ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh)
+}
+
+/**
+ * Visor GPS en <canvas>. Tres estados: enlace no válido -> "mapa no
+ * disponible"; enlace válido cargando (o que no es imagen) -> radar animado;
+ * imagen cargada -> snapshot. Solo se carga el enlace si pasa `isSafeGpsLink`.
+ *
+ * @param {object} props
+ * @param {string} [props.gpsLink] `man_gps_link` del backend.
+ */
+export default function GPSCanvas({ gpsLink }) {
+  const canvasRef = useRef(null)
+  const imageRef = useRef(null)
+  const [imageReady, setImageReady] = useState(false)
+  const isSafe = isSafeGpsLink(gpsLink)
+
+  // Carga el enlace como imagen; si no es una imagen (o falla), `imageReady`
+  // queda en false y el radar cubre el hueco.
+  useEffect(() => {
+    imageRef.current = null
+    setImageReady(false)
+    if (!isSafe) return
+
+    const img = new Image()
+    img.referrerPolicy = 'no-referrer' // no filtrar la URL de la app al servidor de la imagen
+    img.onload = () => {
+      imageRef.current = img
+      setImageReady(true)
+    }
+    img.src = gpsLink
+
+    return () => {
+      img.onload = null
+    }
+  }, [gpsLink, isSafe])
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const ctx = canvas.getContext('2d')
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    let angle = 0
+    let frameId = null
+
+    function resize() {
+      const dpr = window.devicePixelRatio || 1
+      const rect = canvas.getBoundingClientRect()
+      canvas.width = rect.width * dpr
+      canvas.height = rect.height * dpr
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      render()
+    }
+
+    function render() {
+      const w = canvas.clientWidth
+      const h = canvas.clientHeight
+      if (imageReady && imageRef.current) {
+        drawSnapshot(ctx, imageRef.current, w, h)
+      } else if (isSafe) {
+        drawRadar(ctx, w, h, angle)
+      } else {
+        drawUnavailable(ctx, w, h)
+      }
+    }
+
+    function loop() {
+      angle += 0.02
+      render()
+      if (!document.hidden) frameId = requestAnimationFrame(loop)
+    }
+
+    const resizeObserver = new ResizeObserver(resize)
+    resizeObserver.observe(canvas)
+    resize()
+
+    const shouldAnimate = isSafe && !imageReady && !prefersReducedMotion
+
+    function handleVisibility() {
+      if (document.hidden) {
+        if (frameId) cancelAnimationFrame(frameId)
+        frameId = null
+      } else if (shouldAnimate && !frameId) {
+        frameId = requestAnimationFrame(loop)
+      }
+    }
+
+    if (shouldAnimate) {
+      frameId = requestAnimationFrame(loop)
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      if (frameId) cancelAnimationFrame(frameId)
+      resizeObserver.disconnect()
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [isSafe, imageReady])
+
+  return (
+    <div className="gps-canvas glass">
+      <canvas ref={canvasRef} className="gps-canvas__surface" />
+    </div>
+  )
+}

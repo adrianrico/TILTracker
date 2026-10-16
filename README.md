@@ -2,40 +2,56 @@
 
 SPA en React 19 + Vite para seguimiento en tiempo real de maniobras de transporte. Consume el backend [`maylob_backend`](../maylob_backend) (Express + Mongoose) mediante una llave de acceso por cliente.
 
+> ¿Quieres aprender a construir un proyecto igual desde cero? Lee **[`GUIA_APRENDIZAJE.md`](GUIA_APRENDIZAJE.md)**.
+
+## Arquitectura (por features)
+
+```
+src/
+├── main.jsx                  Punto de entrada: monta React + proveedores + estilos
+├── app/App.jsx               Composición: decide qué pantalla ver y une las features
+├── features/                 Cada carpeta = una capacidad completa del producto
+│   ├── auth/                 Llave de acceso: formulario, validación, persistencia
+│   ├── maneuvers/            Dominio: api/ (red) · hooks/ (datos) · lib/ (lógica pura) · components/ (UI)
+│   └── polling/              Auto-actualización respetuosa con la actividad del usuario
+├── shared/                   Código reutilizable sin conocimiento del negocio
+│   ├── api/httpClient.js     Única instancia de axios
+│   ├── hooks/ · lib/         useIsDesktop, animaciones
+│   └── effects/              Fondo Three.js y parallax
+└── styles/                   tokens → glass → neumo → layout
+```
+
+Reglas: `features/*` pueden importar de `shared/`, **nunca** de otra feature salvo en `app/` (composición). La lógica de negocio vive en funciones puras (`lib/`) con tests. Alias de imports: `@` = `src/`.
+
 ## Requisitos
 
 - Node.js 18+
+- Para `npm run dev`: `maylob_backend` en local (`:8080`).
 
-## Desarrollo local
+## Comandos
 
-```bash
-npm install
-npm run dev
-```
+| Comando | Qué hace |
+|---|---|
+| `npm run dev` | Dev server contra backend local (`.env.development`) |
+| `npm run dev:mock` | Dev server con backend simulado (`mock/mockApi.js`); llaves: `demo1234` (válida), `limite` (429), otra cualquiera (rechazada). No necesita backend ni red |
+| `npm run dev:online` | Dev server contra el backend en Render (`.env.production`) |
+| `npm run build` / `npm run preview` | Build de producción y vista previa local |
+| `npm test` | Tests unitarios (Vitest) de la lógica de dominio y validaciones |
+| `npm run audit:prod` | Auditoría de vulnerabilidades de dependencias de producción |
 
-Abre `http://localhost:5173`. Tanto `npm run dev` como `npm run build` apuntan al backend ya desplegado en Render (`https://maylob-backend.onrender.com`) — no se necesita `maylob_backend` corriendo en local.
+## Seguridad
 
-## Build de producción
-
-```bash
-npm run build
-npm run preview   # sirve dist/ localmente, igual que quedará en línea
-```
-
-`vite build` corre en modo `production` y toma `VITE_API_URL` de `.env.production`. **No hay que tocar código para alternar entre `dev` y `build`** — ambos usan el mismo backend en línea:
-
-| Archivo             | Se usa en      | `VITE_API_URL`                          |
-|---------------------|----------------|------------------------------------------|
-| `.env.development`  | `npm run dev`  | backend en línea (Render)                 |
-| `.env.production`   | `npm run build`| backend en línea (Render)                 |
-| `.env.example`      | referencia     | plantilla para nuevas variables           |
+- La llave se valida con lista blanca (`^[A-Za-z0-9_-]{4,100}$`) antes de enviarse o guardarse (evita inyección NoSQL desde el cliente; el backend vuelve a validar).
+- Enlaces GPS: solo `http(s)`; se cargan con `referrerPolicy="no-referrer"`.
+- React escapa todo el contenido del backend; no se usa `dangerouslySetInnerHTML`.
+- `localStorage` protegido con try/catch (modo privado / bloqueado).
+- Cabeceras en `render.yaml`: CSP (scripts propios, XHR solo al backend), `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`.
+- Dependencias auditadas (`npm audit` = 0 vulnerabilidades).
+- Limitación conocida: la llave viaja como query string (`?key=`) porque así lo define el backend; cambiarlo a header/POST requiere modificar `maylob_backend`.
+- Si cambias la URL del backend, actualiza también `connect-src` en `render.yaml`.
 
 ## Deploy en Render
 
-1. Sube este repo a GitHub (push a `main`/`master`).
-2. En Render: **New → Blueprint**, apunta al repo de GitHub — Render detecta `render.yaml` (sitio estático: build `npm install && npm run build`, publica `dist/`, con rewrite SPA `/* → /index.html`).
-3. Confirma que el backend esté desplegado primero y que `.env.production` apunte a su URL real antes de hacer build/push.
-
-## Notas
-
-- `graphify-out/`, `.agents/`, `.claude/` y `skills-lock.json` son artefactos de tooling de Claude Code y están en `.gitignore` — no forman parte de la app.
+1. Sube el repo a GitHub.
+2. En Render: **New → Blueprint** y apunta al repo (`render.yaml`: `npm ci && npm test && npm run build`, publica `dist/`, rewrite SPA y cabeceras).
+3. El backend debe estar desplegado y `.env.production` apuntar a su URL real.

@@ -1,3 +1,8 @@
+/*
+ * NEUMORFISMO — utilidades de relieve con doble sombra (clara + oscura):
+ * `.neumo` (elevado), `.neumo-inset` (hundido, para inputs) y
+ * `.neumo-button` (botón con estados hover/active).
+ */
 .neumo {
   box-shadow: 6px 6px 14px var(--shadow-dark), -6px -6px 14px var(--shadow-light);
   backdrop-filter: blur(8px) saturate(140%);

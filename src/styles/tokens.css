@@ -1,3 +1,8 @@
+/*
+ * TOKENS DE DISEÑO — variables CSS globales (colores, radios, sombras...).
+ * Cambiar un valor aquí cambia toda la app; el resto de hojas solo usa var(--x).
+ * Orden de carga (ver main.jsx): tokens -> glass -> neumo -> layout.
+ */
 :root {
   --bg-0: #0a0f1a;
   --bg-1: #0e1524;

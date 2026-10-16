@@ -1,3 +1,9 @@
+/*
+ * LAYOUT Y COMPONENTES — estilos por componente con convención BEM
+ * (`bloque__elemento--modificador`, p. ej. `maneuver-card__field--stacked`).
+ * Cada sección lleva el nombre del componente React que la usa.
+ */
+
 /* Background layers (three.js + parallax) --------------------------------- */
 
 .three-background {
