@@ -1,5 +1,5 @@
 /**
- * Cliente HTTP compartido (axios) para hablar con el backend `maylob_backend`.
+ * Cliente HTTP compartido (axios) para hablar con el backend `TIL_Backend`.
  *
  * Es la ÚNICA instancia de axios de la app: cualquier servicio de feature
  * (p. ej. `monitorService`) la importa en lugar de crear la suya, de modo que
@@ -8,7 +8,7 @@
 import axios from 'axios'
 
 /** URL de producción: valor seguro por defecto si `VITE_API_URL` no está definida. */
-const PRODUCTION_API_URL = 'https://maylob-backend.onrender.com'
+const PRODUCTION_API_URL = 'https://til-backend.onrender.com/api/v1'
 
 const httpClient = axios.create({
   // `VITE_API_URL` la inyecta Vite desde `.env.development` / `.env.production`

@@ -16,6 +16,13 @@ describe('parseEvents', () => {
     const raw = ['t1', 'A', 'EN PROCESO', '10', 't2', 'B', 'EN TERMINAL', '60']
     expect(parseEvents(raw)[0]).toEqual({ time: 't2', location: 'B', status: 'EN TERMINAL', percentage: '60' })
   })
+  it('acepta eventos como objetos de TIL_Backend', () => {
+    const raw = [
+      { timestamp: 't1', location_name: 'A', event_name: 'EN PROCESO', progress: '10%' },
+      { timestamp: 't2', location_name: 'B', event_name: 'EN TERMINAL', progress: '60%', updated_by_name: 'X' },
+    ]
+    expect(parseEvents(raw)[0]).toEqual({ time: 't2', location: 'B', status: 'EN TERMINAL', percentage: '60%' })
+  })
   it('devuelve [] con entrada vacía', () => {
     expect(parseEvents(undefined)).toEqual([])
   })

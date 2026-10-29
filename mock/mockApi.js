@@ -2,7 +2,7 @@
  * Plugin de Vite que simula el backend SOLO en modo `mock` (`npm run dev:mock`).
  *
  * Sirve GET /maneuvers/monitor/?key=... con el mismo contrato que
- * `maylob_backend`, para desarrollar y probar la app completa sin backend:
+ * `TIL_Backend`, para desarrollar y probar la app completa sin backend:
  *
  *   - key válida (`demo1234`) -> { code: '1', maneuvers_data: [...] }
  *   - key con formato inválido o desconocida -> HTTP 400

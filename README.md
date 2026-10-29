@@ -1,6 +1,6 @@
 # TIL TRACKER
 
-SPA en React 19 + Vite para seguimiento en tiempo real de maniobras de transporte. Consume el backend [`maylob_backend`](../maylob_backend) (Express + Mongoose) mediante una llave de acceso por cliente.
+SPA en React 19 + Vite para seguimiento en tiempo real de maniobras de transporte. Consume el backend [`TIL_Backend`](../TIL_Backend) (Express + Mongoose) mediante una llave de acceso por cliente.
 
 > ¿Quieres aprender a construir un proyecto igual desde cero? Lee **[`GUIA_APRENDIZAJE.md`](GUIA_APRENDIZAJE.md)**.
 
@@ -26,7 +26,7 @@ Reglas: `features/*` pueden importar de `shared/`, **nunca** de otra feature sal
 ## Requisitos
 
 - Node.js 18+
-- Para `npm run dev`: `maylob_backend` en local (`:8080`).
+- Para `npm run dev`: `TIL_Backend` en local (`:4000`, API en `/api/v1`).
 
 ## Comandos
 
@@ -47,7 +47,7 @@ Reglas: `features/*` pueden importar de `shared/`, **nunca** de otra feature sal
 - `localStorage` protegido con try/catch (modo privado / bloqueado).
 - Cabeceras en `render.yaml`: CSP (scripts propios, XHR solo al backend), `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`.
 - Dependencias auditadas (`npm audit` = 0 vulnerabilidades).
-- Limitación conocida: la llave viaja como query string (`?key=`) porque así lo define el backend; cambiarlo a header/POST requiere modificar `maylob_backend`.
+- Limitación conocida: la llave viaja como query string (`?key=`) porque así lo define el backend; cambiarlo a header/POST requiere modificar `TIL_Backend`.
 - Si cambias la URL del backend, actualiza también `connect-src` en `render.yaml`.
 
 ## Deploy en Render

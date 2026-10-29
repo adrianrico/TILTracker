@@ -6,7 +6,7 @@
  *   man_id, man_client, man_type, man_modality, man_transporter, man_operator,
  *   man_eco, man_current_status, man_current_location, man_dispatch_date,
  *   man_finish_date, man_load_location, man_unload_location, man_progress,
- *   man_gps_link, man_events (array plano), man_containers (array de objetos).
+ *   man_gps_link, man_events (objetos o array plano), man_containers (array de objetos).
  */
 
 // ---------------------------------------------------------------------------
@@ -14,15 +14,29 @@
 // ---------------------------------------------------------------------------
 
 /**
- * `man_events` llega como array plano serializado en grupos de 4:
- * [hora, ubicación, estatus, porcentaje, hora, ubicación, ...].
- * Se agrupa y se invierte para que el índice 0 sea el evento MÁS RECIENTE.
+ * `man_events` llega en uno de dos formatos; ambos se normalizan igual.
+ *  - TIL_Backend: array de objetos
+ *    `{ timestamp, location_name, event_name, progress, ... }`.
+ *  - Heredado: array plano en grupos de 4
+ *    `[hora, ubicación, estatus, porcentaje, hora, ubicación, ...]`.
+ * Se invierte para que el índice 0 sea el evento MÁS RECIENTE.
  *
- * @param {Array<string> | undefined} arr
+ * @param {Array<string | object> | undefined} arr
  * @returns {Array<{time: string, location: string, status: string, percentage: string}>}
  */
 export function parseEvents(arr) {
   if (!arr?.length) return []
+  if (typeof arr[0] === 'object' && arr[0] !== null) {
+    return arr
+      .filter((e) => e && typeof e === 'object')
+      .map((e) => ({
+        time: String(e.timestamp ?? ''),
+        location: String(e.location_name ?? ''),
+        status: String(e.event_name ?? ''),
+        percentage: String(e.progress ?? ''),
+      }))
+      .reverse()
+  }
   const groups = []
   for (let i = 0; i + 3 < arr.length; i += 4) {
     groups.push({ time: arr[i], location: arr[i + 1], status: arr[i + 2], percentage: arr[i + 3] })

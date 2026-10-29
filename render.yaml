@@ -7,7 +7,7 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        value: https://maylob-backend.onrender.com
+        value: https://til-backend.onrender.com/api/v1
     routes:
       # Rewrite SPA: cualquier ruta devuelve index.html (el router es del cliente).
       - type: rewrite
@@ -19,7 +19,7 @@ services:
         name: Content-Security-Policy
         # Solo scripts propios; XHR únicamente al backend; imágenes https (enlaces GPS);
         # sin iframes, sin <object>, sin cambiar <base>, formularios solo al mismo origen.
-        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' https://maylob-backend.onrender.com; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' https://til-backend.onrender.com; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
       - path: /*
         name: X-Content-Type-Options
         value: nosniff
